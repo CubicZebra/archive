@@ -15,4 +15,4 @@ Academic Archive
    :width: 12
 
 `archive <https://github.com/CubicZebra/archive>`_ © Apr 9, 2024 by `Chen Zhang <https://github.com/CubicZebra>`_ is 
-licensed under `CC BY-NC-ND 4.0 |CC| |BY| <https://creativecommons.org/licenses/by-nc-nd/4.0/deed.en>`_
+licensed under `CC BY-NC-ND 4.0 <https://creativecommons.org/licenses/by-nc-nd/4.0/deed.en>`_ |CC| |BY|
