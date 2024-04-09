@@ -1,1 +1,10 @@
-
+/manuscripts/creating/
+.fleet/
+.vs/
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
+*.synctex.gz
