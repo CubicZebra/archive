@@ -8,3 +8,6 @@
 *.out
 *.pdf
 *.synctex.gz
+*.nav
+*.snm
+*.toc
