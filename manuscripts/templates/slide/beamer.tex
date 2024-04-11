@@ -1,7 +1,7 @@
 \documentclass[11pt]{beamer}
 \usetheme{Warsaw}
 \usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
+%\usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -9,13 +9,13 @@
 \graphicspath{{imgs/}}
 \usepackage{setspace}
 \usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+%\usepackage{minted}
 
 
-
-\author{Chen ZHANG \inst{1,2}}
+\author{Chen Zhang \inst{1,2}}
 \title{Slide Template}
-%\setbeamercovered{transparent} 
-%\setbeamertemplate{navigation symbols}{} 
 \setbeamertemplate{enumerate items}[default]
 
 
@@ -25,10 +25,34 @@
 
 \date{}
 
-
-%\subject{} 
+% customized
 \newcommand{\code}[1]{\texttt{#1}}
-\AtEndDocument{\begin{frame}{\huge \quad Thanks for your attention.}\end{frame}}
+\AtEndDocument{\begin{frame}{\huge \quad The End.}\end{frame}}
+
+\definecolor{comment}{rgb}{0, 0.6, 0}
+\definecolor{keyword}{rgb}{0.96, 0.52, 0.02}
+\definecolor{string}{rgb}{0.12, 0.4, 0.87}
+\definecolor{background}{rgb}{0.95,0.95,0.92}
+\lstdefinestyle{mypython}{
+	language=Python,
+    backgroundcolor=\color{background},   
+    commentstyle=\color{comment},
+    keywordstyle=\color{keyword},
+    numberstyle=\tiny\color{magenta},
+    stringstyle=\color{string},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+	showspaces=false,
+	showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+\lstset{style=mypython}
 
 
 \begin{document}
@@ -46,17 +70,17 @@
 \begin{frame}{items and code}
 \begin{enumerate}
 	\item text item 1:
-    \begin{enumerate}
-    	\item something about item 1
-        \item another thing about item 1
-    \end{enumerate}
+		\begin{enumerate}
+			\item something about item 1
+			\item another thing about item 1
+		\end{enumerate}
     \item code item 2:
     \begin{enumerate}
-    	\item can use code like: \code{conda activate env}
-        \item or multi-lines: \\
-        \code{for s in "Hello World":}\\
-        \qquad \code{print(s)}
-    \end{enumerate}
+		\item can use code like: \code{conda activate env}
+		\item or multi-lines: \\
+		\code{for s in "Hello World":}\\
+		\qquad \code{print(s)}
+	\end{enumerate}
 \end{enumerate}
 \end{frame}
 
@@ -66,7 +90,7 @@
         \vspace{0pt}
         \begin{itemize}
             \item emphasis \emph{one} and \emph{two}
-            \item customize  via \emph{\color{red}three} syntax
+            \item customize via \emph{\color{red}three} syntax
             \item code \code{rm} is dangerous $\rightarrow$ \\ {\footnotesize\color{olive}(*more flexible \code{customize} and figure insert)}
         \end{itemize}
     \end{minipage}%
@@ -74,7 +98,7 @@
     \begin{minipage}[t]{0.45\textwidth}
         \vspace{0pt}
         \centering
-              \includegraphics[height=5cm, width=4.5cm]{fig1.jpg}
+        \includegraphics[height=2.5cm, width=2.5cm]{fig1.jpg}
     \end{minipage}
 \end{frame}
 
@@ -84,7 +108,7 @@
 	\begin{minipage}[t]{1\textwidth}
         \vspace{0pt}
         \begin{itemize}
-            \item {try vertical view like:}\\
+            \item {try vertical layout like:}\\
             \singlespacing
             \centering
             \includegraphics[scale=0.5]{fig2.jpg}
@@ -99,6 +123,19 @@
 		\item for plain: \\ $\because m \in (0, 1] \therefore \eta = 2m/(1+m) \in (0, 1]$
 		\item for bold: \\ $\boldsymbol{X} = \boldsymbol{uu}^T$
 	\end{enumerate}
+\end{frame}
+
+\subsection{subsection 2.3}
+\begin{frame}{code snippet}
+	\begin{minipage}[t]{0.5\textwidth}
+		import from whole script like:
+		\lstinputlisting[language=Python]{beamer.py}
+    \end{minipage}%
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+    		or for specified snippet, with caption:
+    		\lstinputlisting[language=Python, caption=list comprehension, firstline=4,lastline=6]{beamer.py}
+    \end{minipage}
 \end{frame}
 
 \end{document}
