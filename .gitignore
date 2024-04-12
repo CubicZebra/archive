@@ -1,6 +1,8 @@
 /manuscripts/creating/
 .fleet/
 .vs/
+
+# LaTeX intermediates:
 *.aux
 *.bbl
 *.blg
@@ -12,3 +14,4 @@
 *.snm
 *.toc
 *.dvi
+*.synctex(busy)

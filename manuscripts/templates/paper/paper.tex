@@ -18,7 +18,32 @@
 \usepackage{caption}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{listings}
 
+\definecolor{comment}{rgb}{0, 0.6, 0}
+\definecolor{keyword}{rgb}{0.96, 0.52, 0.02}
+\definecolor{string}{rgb}{0.12, 0.4, 0.87}
+\definecolor{background}{rgb}{0.95,0.95,0.92}
+\lstdefinestyle{mypython}{
+	language=Python,
+    backgroundcolor=\color{background},   
+    commentstyle=\color{comment},
+    keywordstyle=\color{keyword},
+    numberstyle=\tiny\color{magenta},
+    stringstyle=\color{string},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+	showspaces=false,
+	showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+\lstset{style=mypython}
 \newcommand{\myfig}[1]{{\color{black}#1}}
 \newcommand{\myeq}[2][e]{{\color{black}#1quation~(\ref{#2})}}
 \newcommand{\mytab}[1]{{\color{black}#1}}
@@ -44,6 +69,10 @@ easy to make citation as \mycite{sung2021global}; and it is also available for \
 	\caption{the blackcurrant}
 	\label{tag1}
 \end{figure}
+
+For code block, importing from an inplace file like \mytab{Code~\ref{tag3}}:\par
+
+\lstinputlisting[language=Python, caption=code example, label=tag3]{paper.py}
 
 \begin{table}[htbp]
     \begin{center}
