@@ -1,0 +1,129 @@
+\documentclass{ctexart}
+\usepackage{hyperref}
+\usepackage{ccicons}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyfoot{} % clear all footer fields
+\renewcommand{\footrulewidth}{0.5pt} % line in footer area
+\fancyfoot[L]{Page\ \thepage} % Page
+\fancyfoot[R]{licensed under CC-BY-NC-ND 4.0 \href{https://creativecommons.org/licenses/by-nc-nd/4.0/deed.en}{\ccbyncnd}}
+
+\title{数据读取管道：医学影像文件导入指南}
+\author{Chen Zhang}
+\date{2022.12.12}
+
+\begin{document}
+\maketitle
+
+\section{DICOM协议相关库对数值问题的处理}
+
+\verb|Python|生态中对DICOM文件的主流导入支持，主要是通过\verb|pydicom|或者\verb|SimpleITK|两个库得以完成，然而这两个库在数据导入的过程中在对数值的处理上存在区别。由于这两种库的官方文档中缺乏与其它同类型库的横向对比，而网上的技术分享文档中针对数值问题的细节也鲜有提及，因此在使用过程中有诸多注意点需要在数据导入过程中尤其注意。\par
+
+\subsection{数据维度及体素顺序}
+
+\verb|SimpleITK|在进行单层DICOM数据导入时，使用\verb|GetArrayFromImage|方法将\verb|ReadImage|所获取的图像加载便能得到数值信息，但读入后的数值仍维持d=3的维度，其体素排列顺序为zxy。如果确定读取的是单层DICOM文件，则可用第一个索引将数值取出，此时的数据\verb|ndim|属性应为2，体素排列顺序为xy。\par
+
+\verb|pydicom|在进行单层DICOM数据导入时，使用\verb|pixel_array|属性获取图像数值信息，读入后的数值维度属性(\verb|ndim|)为2，其体素排列顺序为yx，且正好与\verb|SimpleITK|的数值矩阵形成转置的关系。\par
+
+\subsection{数值处理精度}
+
+\verb|SimpleITK|中\verb|(U)Int8|，\verb|(U)Int16|，\verb|(U)Int32|等都是其内置数值类型，在数据读入时其数值精度较宽。而pydicom的数据加载完成后，一般为\verb|ndarray|，\verb|(U)int16|类型，且多数情况下为\verb|uint16|类型。因此在处理CT数据时，常常会出现最低HU值为0的情况，需要将数据类型强制转换为\verb|int16|后，再在此基础上减去1024，数值上才能与SimpleITK相对应。\par
+
+此外，由于\verb|uint16|的数值精度极限为$2^{15} = 32768$，对于如PET模态这样数值范围较大的数据，用\verb|pydicom|读取通常会导致因处理精度不足而造成的数值溢出。此外，数值溢出并不会引发\verb|pydicom|的报错或警告信息，因此在未进行可视化前该问题很难被察觉。\par
+
+\subsection{其它细节}
+
+\verb|informatics|里针对\verb|SimpleITK|与\verb|pydicom|标准不一致等问题，都做了相应的集成优化。基于DICOM序列的重建逻辑源码位于\verb|rebuild|模块中。上述的数值处理逻辑可参考该脚本中\verb|DcmSeries|类的初始化过程，重建数值标准以\verb|SimpleITK|作为参考，体素顺序默认采用zyx的方式进行堆砌。\par
+
+与\verb|SimpleITK|相比，\verb|pydicom|对中文路径支持友好，因此在该模块中预设了两套配置(\verb|SimpleITK_config|，\verb|pydicom_config|)可供采用。\verb|informatics|的DICOM重建管道默认采用\verb|SimpleITK_config|的配置来进行数据读入加载，但当处理的数据中存在大量非英文路径，且数据的数值范围较小且稳定时(如CT图像)，可将配置更换为\verb|pydicom_config|以作更好的适配。\par
+
+另外，通过\verb|pydicom|读取后的图层，其数值数据会以二进制缓存形式保存在字段\verb|PixelData|中。用\verb|get("PixelData")|获取图层的二进制缓存后，用\verb|numpy|的\verb|frombuffer|方法，指定\verb|dtype|后即可将数据恢复为\verb|numpy|的一维数组，再利用\verb|reshape|方法，可以获得与\verb|pixel_array|相同的结果。这里需要强调的是，\verb|PixelData|的二进制缓存与\verb|pixel_array|本质上等效。作者尝试将数值处理精度不足的图层，其对应\verb|PixelData|取出并从缓存中进行重建，但最终效果也与产生溢出后的数值结果相同。因此，对于存在上述问题的数据，应考虑采用\verb|SimpleITK|来作为数据加载引擎，并在加载时，指定精度满足要求的数据类型。\par
+
+
+\section{DICOM在物理空间中的重构}
+
+\subsection{像素空间与体素空间的映射}
+
+根据DICOM委员会PS3.3 2022d标准，图层像素与体素间的转换关系\href{https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.2.html#sect_C.7.6.2.1.1}{图层像素与体素间的转换关系}如式\ref{式1}所示：\par
+
+\begin{equation}\label{式1}
+\left[\begin{array}{c}
+V_x \\
+V_y \\
+V_z \\
+1
+\end{array}\right] = 
+\left[\begin{array}{cccc}
+X_x \Delta_i & Y_x \Delta_j & 0 & S_x\\
+X_y \Delta_i & Y_x \Delta_j & 0 & S_y\\
+X_z \Delta_i & Y_x \Delta_j & 0 & S_z\\
+0 & 0 & 0 & 1
+\end{array}\right]
+\left[\begin{array}{c}
+P_i \\
+P_j \\
+0 \\
+1
+\end{array}\right]
+\end{equation}
+
+上式中，$[X_x,\ X_y,\ X_z,\ Y_x,\ Y_y,\ Y_z]$对应着Image Orientation Patient标签(``0020|0037'')，为体素平面两个基向量与像素平面三个基向量间的余弦值；$[\Delta_i,\ \Delta_j]$对应着Image Spacing标签(``0028|0030'')，为体素平面两个指向行、列基向量的体素间距；$[S_x,\ S_y,\ S_z]$对应着Image Position Patient标签(``0028|0032'')，为像素坐标原点对应着体素空间中的绝对坐标。\par
+
+$[X_x,\ X_y,\ X_z,\ Y_x,\ Y_y,\ Y_z]$为无量纲量，而$[\Delta_i,\ \Delta_j]$与$[S_x,\ S_y,\ S_z]$在真实物理空间中则以毫米(mm)进行计量，因此根据式\ref{式1}中转换矩阵求解出来的体素坐标$[V_x,\ V_y,\ V_z]$应当仍旧保持毫米(mm)的计量单位。\par
+
+\subsection{informatics管道中的仿射矩阵}
+
+在\verb|informatics|的DICOM构造管道中，利用仿射矩阵来代替转换矩阵。仿射矩阵采用式\ref{式1}的泛化形式：式\ref{式2}为标准来进行执行。该矩阵可以通过图像重建完成后图像的\verb|affine|属性来进行访问。\par
+
+\begin{equation}\label{式2}
+\left[\begin{array}{c}
+V_x \\
+V_y \\
+V_z \\
+1
+\end{array}\right] = 
+\left[\begin{array}{cccc}
+X_x \Delta_i & Y_x \Delta_j & Z_x \Delta_k & S_x\\
+X_y \Delta_i & Y_x \Delta_j & Z_y \Delta_k & S_y\\
+X_z \Delta_i & Y_x \Delta_j & Z_z \Delta_k & {S_z}'\\
+0 & 0 & 0 & 1
+\end{array}\right]
+\left[\begin{array}{c}
+P_i \\
+P_j \\
+P_k \\
+1
+\end{array}\right]
+\end{equation}
+
+通常情况下，$[X_x,\ X_y,\ X_z]$和$[Y_x,\ Y_y,\ Y_z]$会与像素空间中的行、列指向相重叠，即便存在坐标旋转，$[X_x,\ X_y,\ X_z]$与$[Y_x,\ Y_y,\ Y_z]$的二范数通常也为1(即互为线性无关的单位向量)，因此Image Spacing(``0028|0030'')可以互换为行、列的体素间距。然而更一般地，若存在坐标的缩放(如带缩放的仿射变换)，则映射的构建不能简单以Image Spacing(``0028|0030'')为标准进行。\par
+
+式\ref{式2}中，$[Z_x,\ Z_y,\ Z_z]$与$\Delta_k$是通过已知信息间接计算而来。在确定$[X_x,\ X_y,\ X_z]$和$[Y_x,\ Y_y,\ Y_z]$正交的前提下，$[Z_x,\ Z_y,\ Z_z]$为$[X_x,\ X_y,\ X_z]$和$[Y_x,\ Y_y,\ Y_z]$的向量外积。$\Delta_k$则是通过层间距字段(Spacing Between Slices，``0018|0088'')，或者Image Position Patient标签(``0028|0032'')的最后一个元素的层间差计算取得。\par
+
+与式\ref{式1}相区别的是，式\ref{式2}中的${S_z}'$为首张图层所对应体素空间中原点坐标的z值。\par
+
+\subsection{仿射矩阵的数学性质与现实意义}
+
+线性代数中我们知道，矩阵事实上对应着把数据从一个空间呈现到另一个空间的映射规则。通过上述示例(式\ref{式2})可以看出，仿射矩阵实际上是数据从像素空间到物理空间中的对应法则， 其构成考虑了旋转、平移、以及拉伸等因素，是一种通用的仿射变换。\par
+
+使用仿射矩阵的一大优势是，它是一种抽象的数学概念，与厂商、设备型号、数据导出方式、甚至是读入的库逻辑无关。一般我们关注的影像信息如Spacing、Origin等属性，都能够被仿射矩阵所包含(例如向量$[X_x\Delta_i,\ X_y\Delta_i,\ X_z\Delta_i]$的模长即第一个轴向上的体素间距)。有了仿射矩阵，就可以不再需要针对不同厂商、不同设备型号等因素写大量的判断语句去进行适配，因为各种设备型号等的预定义坐标体系、数值上的不同，最终都会反映在仿射矩阵上，因此基于仿射矩阵的管道会对数据有着始终如一地呈现。\par
+
+使用仿射矩阵的另一大优势是能够简化计算和方便拓展。例如需要对图像进行重采样，需重新计算体素间距Spacing时，可以完全简化为仿射矩阵的缩放问题，再从被缩放后的仿射矩阵中重新提取体素间距；又例如需要对获取图像旋转角度等位相信息时，可以简化为仿射矩阵的奇异分解问题从而获取成像时的旋转矩阵。\par
+
+
+\section{NIfTI协议文件的一致性处理}
+
+医学影像格式除DICOM标准外，另一套常用的标准是NIfTI，其后缀常为“nii”或“nii.gz”。仿射矩阵在其它库中也有体现。如\verb|nibabel|是\verb|Python|中读取该文件的库，加载后的数据，能够通过\verb|affine|属性访问其仿射矩阵。\verb|SimpleITK|中也包含支持该格式的对应IO。\par
+
+NIfTI由于考虑兼容性等原因，存在三种不同的构建方式。如果其原始信息中显示是通过\verb|sform|构建，则其像素到物理空间中的对应关系便如式\ref{式2}一致。而当图像采用\verb|qform|来进行构建时，其仿射矩阵则无法与真实的物理空间发生对应，这里需要分情况来进行讨论：\par
+
+\begin{itemize}
+    \item 存在\verb|qfac|因子
+    \item 不存在\verb|qfac|因子
+\end{itemize}
+
+第一种情况是采用较新的\verb|qform|标准，\verb|qfac|的作用在于修正（左右手）坐标系，使数据的呈现保持一致，其仿射矩阵信息能包含到物理空间的旋转、平移等信息；而第二种情况对应于比较旧的标准，仅包含像致至体素的对应关系，到物理空间的旋转信息会产生丢失。需要指出的是，两种无论是哪种方式，其转换到的物理空间中的坐标相对设备而言的。如果复数个影像数据在采集过程中，设备存在不同的空间补偿设置，则采用\verb|qform|的构建很难将这部分信息也包含进去。\par
+
+在0.0.5版本之后\verb|informatics|会以\verb|SimpleITK|为基础，来实现与DICOM构建类似的数据访问逻辑。\par
+
+\end{document}
