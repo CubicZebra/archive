@@ -8,10 +8,13 @@
 *.blg
 *.log
 *.out
-*.pdf
 *.synctex.gz
 *.nav
 *.snm
 *.toc
 *.dvi
 *.synctex(busy)
+
+# pdf of templates:
+*paper.pdf
+*beamer.pdf
