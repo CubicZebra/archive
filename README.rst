@@ -8,7 +8,7 @@ Academic Archive
 
 .. |CC-BY-NC-ND| image:: https://licensebuttons.net/l/by-nc-nd/4.0/88x31.png
    :name: license button
-   :width: 90
+   :width: 50
    :target: https://creativecommons.org/licenses/by-nc-nd/4.0/deed.en
 
 `archive <https://github.com/CubicZebra/archive>`_ © Apr 9, 2024 by `Chen Zhang <https://github.com/CubicZebra>`_ is 
