@@ -1,4 +1,4 @@
-# conf related 
+# conf related
 from info.me import FuncTools, T, Null
 from typing import Any
 from info.vis import visualization as vis
