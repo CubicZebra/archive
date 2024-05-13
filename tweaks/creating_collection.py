@@ -45,3 +45,21 @@ vis.Canvas.play(data=res, fig_type='beeswarm', fig_configs=vis.FigConfigs.Beeswa
 vis.Canvas.play(data=res, fig_type='box', fig_configs=vis.FigConfigs.Box.update(name=func_names,
                                                                                 brush=palettes),
                 cvs_left_label='time consumption (s)', cvs_legend=True)
+
+
+from info.me import Unit
+from info.me import tensorn as tsn
+from info.ins import datasets
+
+
+crop, denoise, resample = [Unit(mappings=[_]) for _ in [tsn.cropper, tsn.gaussian_filter, tsn.resize]]
+processing = crop >> denoise >> resample
+prewitt, canny, log = [Unit(mappings=[_]) for _ in [tsn.prewitt_filter, tsn.canny_filter, 
+                                                    tsn.laplacian_of_gaussian_filter]]
+compare_experiment = processing >> (prewitt | canny | log)
+
+config = {'k_shape': (5, 5), 'new_size': (450, 800), 'crop_range': [(0.7, 0.1), (0.99, 0.6)]}
+p = compare_experiment.shadow(**config)
+vis.Canvas.play(data=datasets.accent(), fig_type='image')
+vis.Canvas.play(data=processing(data=datasets.accent(), **config), fig_type='image', cvs_size=(400, 520))
+_ = [vis.Canvas.play(data=_, fig_type='image', cvs_size=(400, 520)) for _ in p(data=datasets.accent())]
